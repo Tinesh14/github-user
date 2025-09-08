@@ -22,5 +22,6 @@ data class ApiUserDetail(
     val company: String?,
     val location: String?,
     val followers: Int?,
-    val following: Int?
+    val following: Int?,
+    @Json(name = "public_repos") val publicRepos: Int?
 )

@@ -5,7 +5,7 @@ import com.example.domain.model.User
 
 
 fun UserEntity.toDomain(): User =
-    User(id, username, avatarUrl, name, bio)
+    User(id, username, avatarUrl, name, bio, followers, following, publicRepos)
 
 fun User.toEntity(): UserEntity =
-    UserEntity(id, username, avatarUrl, name, bio)
+    UserEntity(id, username, avatarUrl, name, bio, followers, following, publicRepos)

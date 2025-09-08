@@ -6,7 +6,7 @@ import com.example.domain.model.User
 
 
 fun ApiUser.toDomain(): User =
-    User(id = id, username = login, avatarUrl = avatarUrl, name = null, bio = null)
+    User(id = id, username = login, avatarUrl = avatarUrl, name = null, bio = null, following = null, followers = null, publicRepos = null)
 
 fun ApiUserDetail.toDomain(): User =
-    User(id = id, username = login, avatarUrl = avatarUrl, name = name, bio = bio)
+    User(id = id, username = login, avatarUrl = avatarUrl, name = name, bio = bio, following = following, followers = followers, publicRepos = publicRepos)

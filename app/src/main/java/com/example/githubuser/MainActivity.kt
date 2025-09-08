@@ -1,5 +1,6 @@
 package com.example.githubuser
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,10 +14,12 @@ import com.example.githubuser.ui.theme.GithubUserTheme
 
 class MainActivity : ComponentActivity() {
 
+    @SuppressLint("NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+        window.isNavigationBarContrastEnforced = false
         setContent {
             GithubUserTheme {
                 AppNavHost()
