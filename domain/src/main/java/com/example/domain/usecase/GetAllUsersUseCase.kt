@@ -5,5 +5,5 @@ import com.example.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 
 class GetAllUsersUseCase(private val repository: UserRepository) {
-    operator fun invoke(): Flow<List<User>> = repository.getAllUsers()
+    operator fun invoke(since: Int = 0, perPage: Int = 30): Flow<List<User>> = repository.getAllUsers(since, perPage)
 }

@@ -13,9 +13,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.LayoutDirection
@@ -27,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.githubuser.ui.screen.AllUsersScreen
 import com.example.githubuser.ui.screen.UserDetailScreen
+import com.example.githubuser.util.networkStatusFlow
 
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
     data object Home : BottomNavItem("all_users", Icons.Default.Home, "Home")
@@ -45,6 +51,24 @@ fun AppNavHost() {
     )
 
     val bottomBarRoutes = bottomNavItems.map { it.route }
+
+    // Create one global SnackbarHostState
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Network status flow
+    val isConnected by networkStatusFlow()
+
+    // Show/dismiss offline snackbar
+    LaunchedEffect(isConnected) {
+        if (!isConnected) {
+            snackbarHostState.showSnackbar(
+                message = "No Internet Connection",
+                duration = SnackbarDuration.Indefinite
+            )
+        } else {
+            snackbarHostState.currentSnackbarData?.dismiss()
+        }
+    }
 
     // Conditional bottom bar
     val bottomBar: @Composable () -> Unit = {
@@ -74,6 +98,7 @@ fun AppNavHost() {
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.systemBars,
         bottomBar = bottomBar,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) } // Global snackbar
     ) { padding ->
         NavHost(
             navController = navController,
@@ -92,11 +117,6 @@ fun AppNavHost() {
                     }
                 )
             }
-
-            // Favorites Screen
-//            composable(BottomNavItem.Favorites.route) {
-//                FavoritesScreen()
-//            }
 
             composable(
                 "user_detail/{username}",

@@ -29,13 +29,33 @@ class UserViewModel(
     private val _userDetail = MutableStateFlow<UserUiState<User>>(UserUiState.Loading)
     val userDetail: StateFlow<UserUiState<User>> = _userDetail.asStateFlow()
 
+    private var currentPageSince = 0
+    var isLoadingPage = false
+    private var endReached = false
+    private val pageSize = 30
+    private val currentUsers = mutableListOf<User>()
+
     /** Get all users (cache first, then remote) */
-    fun getAllUsers() {
+    fun getAllUsersNextPage() {
+        if (isLoadingPage || endReached) return
+
         viewModelScope.launch {
-            getAllUsersUseCase()
-                .onStart { _allUsers.value = UserUiState.Loading }
-                .catch { e -> _allUsers.value = UserUiState.Error(e.message ?: "Unknown error") }
-                .collect { users -> _allUsers.value = UserUiState.Success(users) }
+            isLoadingPage = true
+            getAllUsersUseCase(currentPageSince, pageSize)
+                .catch { e ->
+                    // Keep old users if error
+                    _allUsers.value = UserUiState.Error(e.message ?: "Unknown error")
+                }
+                .collect { users ->
+                    if (users.isEmpty()) {
+                        endReached = true
+                    } else {
+                        currentUsers.addAll(users)
+                        _allUsers.value = UserUiState.Success(currentUsers.toList())
+                        currentPageSince = currentUsers.last().id.toInt()
+                    }
+                }
+            isLoadingPage = false
         }
     }
 

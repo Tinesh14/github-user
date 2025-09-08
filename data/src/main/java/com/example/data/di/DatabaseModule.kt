@@ -10,7 +10,7 @@ import org.koin.dsl.module
 val databaseModule = module {
     single {
         Room.databaseBuilder(get(), AppDatabase::class.java, "app_db")
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(false)
             .build()
     }
     single { get<AppDatabase>().userDao() }

@@ -46,21 +46,25 @@ class UserRepositoryImpl(
     }
 
     override fun getAllUsers(since: Int, perPage: Int): Flow<List<User>> = flow {
-        // Emit cached users first
-        val cached = userDao.getAllUsers().first()
-        if (cached.isNotEmpty())  emit(cached.map { it.toDomain() })
+        // Get cached users
+        val cached = userDao.getAllUsers().first().map { it.toDomain() }
+
+        // Calculate which slice of cached to emit for this page
+        val pageCached = cached.drop(since).take(perPage)
+        if (pageCached.isNotEmpty()) emit(pageCached)
 
         try {
             // Fetch remote users
             val remoteUsers = service.getAllUsers(since, perPage).map { it.toDomain() }
 
-            // Store only getAllUsers result to local DB
+            // Store remote users in DB
             userDao.insertUsers(remoteUsers.map { it.toEntity() })
 
-            // Emit fresh data
+            // Emit remote users
             emit(remoteUsers)
         } catch (e: Exception) {
-            emit(cached.map { it.toDomain() })
+            // If error, fallback to cached page only
+            if (pageCached.isNotEmpty()) emit(pageCached)
         }
     }
 }

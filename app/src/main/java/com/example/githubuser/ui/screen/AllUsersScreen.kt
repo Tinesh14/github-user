@@ -1,6 +1,7 @@
 package com.example.githubuser.ui.screen
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +55,7 @@ fun AllUsersScreen(viewModel: UserViewModel = koinViewModel(), onUserClick: (Str
     val searchResultsState by viewModel.searchResults.collectAsState()
 
     // Fetch all users when screen loads
-    LaunchedEffect(Unit) { viewModel.getAllUsers() }
+    LaunchedEffect(Unit) { viewModel.getAllUsersNextPage() }
 
     LaunchedEffect(query) {
         if (query.isNotEmpty()) {
@@ -69,7 +72,7 @@ fun AllUsersScreen(viewModel: UserViewModel = koinViewModel(), onUserClick: (Str
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            val onActiveChange = { value: Boolean ->  }
+            val onActiveChange = { _: Boolean ->  }
             val colors1 = SearchBarDefaults.colors()
 
             SearchBar(
@@ -113,10 +116,37 @@ fun AllUsersScreen(viewModel: UserViewModel = koinViewModel(), onUserClick: (Str
                 }
                 is UserUiState.Success -> {
                     val users = displayState.data
-                    LazyColumn {
+                    val listState = rememberLazyListState()
+                    val usersCount = users.size
+
+                    LazyColumn (state = listState, modifier = Modifier.fillMaxSize()){
                         items(users, key = { it.id }) { user ->
                             UserItem(user) { onUserClick(user.username) }
                             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                        }
+                        // Optional loading indicator at bottom
+                        if (viewModel.isLoadingPage) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+                    }
+
+                    LaunchedEffect(listState, usersCount) {
+                        snapshotFlow {
+                            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                            lastVisible
+                        }.collect { lastVisible ->
+                            if (lastVisible >= users.size - 3 && !viewModel.isLoadingPage) {
+                                viewModel.getAllUsersNextPage()
+                            }
                         }
                     }
                 }
@@ -163,7 +193,7 @@ fun UserItem(user: User, onClick: () -> Unit) {
             }
         }
         Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Go to user profile",
             modifier = Modifier.size(16.dp)
         )
