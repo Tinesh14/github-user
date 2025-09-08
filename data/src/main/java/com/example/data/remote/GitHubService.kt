@@ -14,4 +14,11 @@ interface GitHubService {
 
     @GET("users/{username}")
     suspend fun getUser(@Path("username") username: String): ApiUserDetail
+
+    // Optional: Fetch all users (pagination)
+    @GET("users")
+    suspend fun getAllUsers(
+        @Query("since") since: Int = 0,
+        @Query("per_page") perPage: Int = 30
+    ): List<ApiUser>
 }

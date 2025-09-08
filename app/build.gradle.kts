@@ -74,6 +74,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose)
+
     // Room (needed if ViewModel accesses DAO directly for testing)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -81,6 +84,7 @@ dependencies {
 
     // Koin (DI)
     implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
 
     // Image loading (Compose)
     implementation(libs.coil.compose)
