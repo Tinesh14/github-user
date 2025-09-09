@@ -31,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.githubuser.ui.screen.AllUsersScreen
+import com.example.githubuser.ui.screen.FavoriteUsersScreen
 import com.example.githubuser.ui.screen.UserDetailScreen
 import com.example.githubuser.util.networkStatusFlow
 
@@ -112,6 +113,16 @@ fun AppNavHost() {
         ) {
             composable(BottomNavItem.Home.route) {
                 AllUsersScreen(
+                    onUserClick = { username ->
+                        navController.navigate("user_detail/$username")
+                    }
+                )
+            }
+
+            // --- Favorites ---
+            composable(BottomNavItem.Favorites.route) {
+                FavoriteUsersScreen(
+                    onBack = { navController.popBackStack() },
                     onUserClick = { username ->
                         navController.navigate("user_detail/$username")
                     }

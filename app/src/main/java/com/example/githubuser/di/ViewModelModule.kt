@@ -9,7 +9,10 @@ val viewModelModule = module {
         UserViewModel(
             getAllUsersUseCase = get(),
             searchUsersUseCase = get(),
-            getUserDetailUseCase = get()
+            getUserDetailUseCase = get(),
+            getFavoriteUsersUseCase = get(),
+            addFavoriteUserUseCase = get(),
+            removeFavoriteUserUseCase = get()
         )
     }
 }

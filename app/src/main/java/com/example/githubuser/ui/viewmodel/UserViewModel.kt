@@ -3,8 +3,11 @@ package com.example.githubuser.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.domain.model.User
+import com.example.domain.usecase.AddFavoriteUserUseCase
 import com.example.domain.usecase.GetAllUsersUseCase
+import com.example.domain.usecase.GetFavoriteUsersUseCase
 import com.example.domain.usecase.GetUserDetailUseCase
+import com.example.domain.usecase.RemoveFavoriteUserUseCase
 import com.example.domain.usecase.SearchUsersUseCase
 import com.example.githubuser.ui.state.UserUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +20,10 @@ import kotlinx.coroutines.launch
 class UserViewModel(
     private val getAllUsersUseCase: GetAllUsersUseCase,
     private val searchUsersUseCase: SearchUsersUseCase,
-    private val getUserDetailUseCase: GetUserDetailUseCase
+    private val getUserDetailUseCase: GetUserDetailUseCase,
+    private val getFavoriteUsersUseCase: GetFavoriteUsersUseCase,
+    private val addFavoriteUserUseCase: AddFavoriteUserUseCase,
+    private val removeFavoriteUserUseCase: RemoveFavoriteUserUseCase
 ) : ViewModel() {
 
     private val _allUsers = MutableStateFlow<UserUiState<List<User>>>(UserUiState.Loading)
@@ -34,6 +40,42 @@ class UserViewModel(
     private var endReached = false
     private val pageSize = 30
     private val currentUsers = mutableListOf<User>()
+
+    // --- favorites state ---
+    private val _favorites = MutableStateFlow<UserUiState<List<User>>>(UserUiState.Loading)
+    val favorites: StateFlow<UserUiState<List<User>>> = _favorites.asStateFlow()
+
+    private val _isFavorite = MutableStateFlow(false)
+    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
+
+
+    /** Observe favorite users continuously */
+     fun observeFavorites() {
+        viewModelScope.launch {
+            getFavoriteUsersUseCase()
+                .catch { e -> _favorites.value = UserUiState.Error(e.message ?: "Unknown error") }
+                .collect { users ->
+                    _favorites.value = UserUiState.Success(users)
+                }
+        }
+    }
+
+    fun observeFavoriteStatus(username: String) {
+        viewModelScope.launch {
+            getFavoriteUsersUseCase().collect { users ->
+                println("Users: $users")
+                _isFavorite.value = users.any { it.username == username }
+            }
+        }
+    }
+
+    fun addToFavorite(user: User) {
+        viewModelScope.launch { addFavoriteUserUseCase(user) }
+    }
+
+    fun removeFromFavorite(user: User) {
+        viewModelScope.launch { removeFavoriteUserUseCase(user) }
+    }
 
     /** Get all users (cache first, then remote) */
     fun getAllUsersNextPage(isOnline: Boolean) {

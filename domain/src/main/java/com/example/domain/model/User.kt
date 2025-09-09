@@ -9,5 +9,6 @@ data class User(
     val bio: String?,
     val followers: Int?,
     val following: Int?,
-    val publicRepos: Int?
+    val publicRepos: Int?,
+    val isFavorite: Boolean = false
 )

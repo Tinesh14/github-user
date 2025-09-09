@@ -15,6 +15,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
     fun getUser(username: String): Flow<UserEntity?>
 
+    @Query("SELECT * FROM users WHERE isFavorite = 1")
+    fun getFavoriteUsers(): Flow<List<UserEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUsers(users: List<UserEntity>)
 
@@ -23,4 +26,7 @@ interface UserDao {
 
     @Update
     suspend fun updateUser(user: UserEntity)
+
+    @Query("UPDATE users SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun setFavoriteUser(id: Long, isFavorite: Boolean)
 }

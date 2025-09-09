@@ -8,5 +8,10 @@ interface UserRepository {
     fun getAllUsers(since: Int = 0, perPage: Int = 30, isOnline: Boolean = false): Flow<List<User>>
     fun searchUsers(query: String): Flow<List<User>>
     fun getUserDetail(username: String): Flow<User>
+
+    // ⭐ Favorites
+    fun getFavoriteUsers(): Flow<List<User>>
+    suspend fun addToFavorite(user: User)
+    suspend fun removeFromFavorite(user: User)
 }
 

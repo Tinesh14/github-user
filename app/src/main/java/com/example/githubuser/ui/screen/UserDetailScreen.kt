@@ -54,18 +54,21 @@ fun UserDetailScreen(
     onBack: () -> Unit = {}
 ) {
     val state by viewModel.userDetail.collectAsState()
-    var isFavorite by remember { mutableStateOf(false) }
-
+    val isFavorite by viewModel.isFavorite.collectAsState()
     // Fetch user detail
-    LaunchedEffect(username) { viewModel.getUserDetail(username) }
+    LaunchedEffect(username) {
+        viewModel.getUserDetail(username)
+        viewModel.observeFavoriteStatus(username)
+    }
+
+    // Extract user jika Success
+    val user: User? = (state as? UserUiState.Success<User>)?.data
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text("Profile",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Text("Profile", style = MaterialTheme.typography.titleLarge)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -76,15 +79,23 @@ fun UserDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { isFavorite = !isFavorite }) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
-                        )
+                    user?.let {
+                        IconButton(onClick = {
+                            if (isFavorite) {
+                                viewModel.removeFromFavorite(it)
+                            } else {
+                                viewModel.addToFavorite(it)
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors( // Add this for color customization
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
@@ -103,6 +114,7 @@ fun UserDetailScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
+
                 is UserUiState.Error -> {
                     Text(
                         text = (state as UserUiState.Error).message,
@@ -110,65 +122,64 @@ fun UserDetailScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
+
                 is UserUiState.Success -> {
-                    val user = (state as UserUiState.Success<User>).data
+                    user?.let {
+                        // Avatar
+                        AsyncImage(
+                            model = it.avatarUrl,
+                            contentDescription = "${it.username} avatar",
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
+                                .align(Alignment.CenterHorizontally)
+                        )
 
-                    // Avatar
-                    AsyncImage(
-                        model = user.avatarUrl,
-                        contentDescription = "${user.username} avatar",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .align(Alignment.CenterHorizontally)
-                    )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        // Name
+                        Text(
+                            text = it.name ?: it.username,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
 
-                    // Name
-                    Text(
-                        text = user.name ?: user.username,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.onBackground, // Themed text color
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
+                        Text(
+                            text = "@${it.username}",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
 
-                    Text(
-                        text = "@${user.username}",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), // Themed, slightly transparent text color
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        // Bio
+                        Text(
+                            text = it.bio ?: "-",
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        )
 
-                    // Bio
-                    Text(
-                        text = user.bio ?: "-",
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onBackground, // Themed text color
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    )
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        StatCard(count = user.followers ?: 0, label = "Followers")
-                        StatCard(count = user.following ?: 0, label = "Following")
-                        StatCard(count = user.publicRepos ?: 0, label = "Repositories")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            StatCard(count = it.followers ?: 0, label = "Followers")
+                            StatCard(count = it.following ?: 0, label = "Following")
+                            StatCard(count = it.publicRepos ?: 0, label = "Repositories")
+                        }
                     }
                 }
             }
         }
     }
-
 }
 
 @Composable
