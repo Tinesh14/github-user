@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.flow
 
 class UserRepositoryImpl(
     private val service: GitHubService,
-    private val userDao: UserDao
+    private val userDao: UserDao,
 ) : UserRepository {
 
     override fun searchUsers(query: String): Flow<List<User>> = flow {
@@ -45,13 +45,15 @@ class UserRepositoryImpl(
         }
     }
 
-    override fun getAllUsers(since: Int, perPage: Int): Flow<List<User>> = flow {
+    override fun getAllUsers(since: Int, perPage: Int, isOnline: Boolean): Flow<List<User>> = flow {
         // Get cached users
         val cached = userDao.getAllUsers().first().map { it.toDomain() }
 
         // Calculate which slice of cached to emit for this page
         val pageCached = cached.drop(since).take(perPage)
         if (pageCached.isNotEmpty()) emit(pageCached)
+
+        if (!isOnline) return@flow
 
         try {
             // Fetch remote users

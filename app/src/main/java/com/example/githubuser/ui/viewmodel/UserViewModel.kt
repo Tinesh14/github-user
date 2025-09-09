@@ -36,12 +36,12 @@ class UserViewModel(
     private val currentUsers = mutableListOf<User>()
 
     /** Get all users (cache first, then remote) */
-    fun getAllUsersNextPage() {
+    fun getAllUsersNextPage(isOnline: Boolean) {
         if (isLoadingPage || endReached) return
 
         viewModelScope.launch {
             isLoadingPage = true
-            getAllUsersUseCase(currentPageSince, pageSize)
+            getAllUsersUseCase(currentPageSince, pageSize, isOnline = isOnline)
                 .catch { e ->
                     // Keep old users if error
                     _allUsers.value = UserUiState.Error(e.message ?: "Unknown error")
@@ -56,6 +56,20 @@ class UserViewModel(
                     }
                 }
             isLoadingPage = false
+        }
+    }
+
+    fun refreshUsers(isOnline: Boolean) {
+        if (isLoadingPage) return
+
+        viewModelScope.launch {
+            // Reset pagination
+            currentPageSince = 0
+            endReached = false
+            currentUsers.clear()
+
+            // Load first page
+            getAllUsersNextPage(isOnline)
         }
     }
 

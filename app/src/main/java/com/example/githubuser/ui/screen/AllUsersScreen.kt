@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +43,7 @@ import coil.compose.AsyncImage
 import com.example.domain.model.User
 import com.example.githubuser.ui.state.UserUiState
 import com.example.githubuser.ui.viewmodel.UserViewModel
+import com.example.githubuser.util.networkStatusFlow
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
@@ -53,9 +55,15 @@ fun AllUsersScreen(viewModel: UserViewModel = koinViewModel(), onUserClick: (Str
     // Collect StateFlows
     val allUsersState by viewModel.allUsers.collectAsState()
     val searchResultsState by viewModel.searchResults.collectAsState()
+    val isConnected by networkStatusFlow()
+    var isRefreshing by remember { mutableStateOf(false) }
 
     // Fetch all users when screen loads
-    LaunchedEffect(Unit) { viewModel.getAllUsersNextPage() }
+    LaunchedEffect(Unit) { viewModel.getAllUsersNextPage(isConnected) }
+
+    LaunchedEffect(viewModel.allUsers.collectAsState().value) {
+        isRefreshing = false
+    }
 
     LaunchedEffect(query) {
         if (query.isNotEmpty()) {
@@ -118,22 +126,30 @@ fun AllUsersScreen(viewModel: UserViewModel = koinViewModel(), onUserClick: (Str
                     val users = displayState.data
                     val listState = rememberLazyListState()
                     val usersCount = users.size
-
-                    LazyColumn (state = listState, modifier = Modifier.fillMaxSize()){
-                        items(users, key = { it.id }) { user ->
-                            UserItem(user) { onUserClick(user.username) }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                        }
-                        // Optional loading indicator at bottom
-                        if (viewModel.isLoadingPage) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            isRefreshing = true
+                            viewModel.refreshUsers(isConnected)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn (state = listState, modifier = Modifier.fillMaxSize()){
+                            items(users, key = { it.id }) { user ->
+                                UserItem(user) { onUserClick(user.username) }
+                                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                            }
+                            // Optional loading indicator at bottom
+                            if (viewModel.isLoadingPage) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
                                 }
                             }
                         }
@@ -145,7 +161,7 @@ fun AllUsersScreen(viewModel: UserViewModel = koinViewModel(), onUserClick: (Str
                             lastVisible
                         }.collect { lastVisible ->
                             if (lastVisible >= users.size - 3 && !viewModel.isLoadingPage) {
-                                viewModel.getAllUsersNextPage()
+                                viewModel.getAllUsersNextPage(isConnected)
                             }
                         }
                     }
