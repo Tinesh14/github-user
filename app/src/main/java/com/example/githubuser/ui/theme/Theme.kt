@@ -1,6 +1,5 @@
 package com.example.githubuser.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +25,7 @@ private val DarkColorScheme = darkColorScheme(
     surface = SurfaceDark,
     onSurface = OnSurfaceDark
 )
+
 @Composable
 fun GithubUserTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

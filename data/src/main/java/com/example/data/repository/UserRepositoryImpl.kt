@@ -9,6 +9,7 @@ import com.example.domain.model.User
 import com.example.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 
 class UserRepositoryImpl(
@@ -31,29 +32,35 @@ class UserRepositoryImpl(
     /** Get detailed user info — optional caching */
     override fun getUserDetail(username: String): Flow<User> = flow {
         // Emit cached first if exists
-        userDao.getUser(username).first()?.let { emit(it.toDomain()) }
+        val cachedUser = userDao.getUser(username).first()
+        cachedUser?.let { emit(it.toDomain()) }
 
         try {
             val remote = service.getUser(username).toDomain()
 
-            // Optional: store detail into DB
-            userDao.insertUser(remote.toEntity())
+            // Only update DB if user already exists
+            if (cachedUser != null) {
+                userDao.updateUser(remote.toEntity())
+            }
 
             emit(remote)
         } catch (e: Exception) {
-            userDao.getUser(username).first()?.let { emit(it.toDomain()) }
+            cachedUser?.let { emit(it.toDomain()) }
         }
     }
 
     override fun getAllUsers(since: Int, perPage: Int, isOnline: Boolean): Flow<List<User>> = flow {
         // Get cached users
-        val cached = userDao.getAllUsers().first().map { it.toDomain() }
+        val cached = userDao.getAllUsers().firstOrNull()?.map { it.toDomain() } ?: emptyList()
 
         // Calculate which slice of cached to emit for this page
         val pageCached = cached.drop(since).take(perPage)
         if (pageCached.isNotEmpty()) emit(pageCached)
 
-        if (!isOnline) return@flow
+        if (!isOnline){
+            if (cached.isEmpty()) emit(emptyList())
+            return@flow
+        }
 
         try {
             // Fetch remote users
@@ -66,7 +73,12 @@ class UserRepositoryImpl(
             emit(remoteUsers)
         } catch (e: Exception) {
             // If error, fallback to cached page only
-            if (pageCached.isNotEmpty()) emit(pageCached)
+            if (pageCached.isNotEmpty()) {
+                emit(pageCached)
+            } else {
+                // If cache is empty, emit empty list
+                emit(emptyList())
+            }
         }
     }
 }

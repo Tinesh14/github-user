@@ -123,7 +123,10 @@ fun AppNavHost() {
                 arguments = listOf(navArgument("username") { type = NavType.StringType })
             ) { backStackEntry ->
                 val username = backStackEntry.arguments?.getString("username") ?: ""
-                UserDetailScreen(username = username)
+                UserDetailScreen(
+                    username = username,
+                    onBack = { navController.popBackStack() } // This is the implementation
+                )
             }
         }
     }

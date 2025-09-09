@@ -49,6 +49,8 @@ class UserViewModel(
                 .collect { users ->
                     if (users.isEmpty()) {
                         endReached = true
+                        currentUsers.addAll(emptyList())
+                        _allUsers.value = UserUiState.Success(currentUsers.toList())
                     } else {
                         currentUsers.addAll(users)
                         _allUsers.value = UserUiState.Success(currentUsers.toList())
@@ -92,4 +94,5 @@ class UserViewModel(
                 .collect { user -> _userDetail.value = UserUiState.Success(user) }
         }
     }
+
 }

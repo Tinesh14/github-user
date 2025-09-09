@@ -12,12 +12,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,98 +46,136 @@ import com.example.githubuser.ui.state.UserUiState
 import com.example.githubuser.ui.viewmodel.UserViewModel
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailScreen(
     viewModel: UserViewModel = koinViewModel(),
-    username: String
+    username: String,
+    onBack: () -> Unit = {}
 ) {
     val state by viewModel.userDetail.collectAsState()
+    var isFavorite by remember { mutableStateOf(false) }
 
     // Fetch user detail
     LaunchedEffect(username) { viewModel.getUserDetail(username) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        when (state) {
-            is UserUiState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text("Profile",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { isFavorite = !isFavorite }) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors( // Add this for color customization
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-            }
-            is UserUiState.Error -> {
-                Text(
-                    text = (state as UserUiState.Error).message,
-                    color = Color.Red,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            }
-            is UserUiState.Success -> {
-                val user = (state as UserUiState.Success<User>).data
-
-                // Avatar
-                AsyncImage(
-                    model = user.avatarUrl,
-                    contentDescription = "${user.username} avatar",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .align(Alignment.CenterHorizontally)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Name
-                Text(
-                    text = user.name ?: user.username,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-
-                Text(
-                    text = "@${user.username}",
-                    fontSize = 16.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Bio
-                user.bio?.let {
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            when (state) {
+                is UserUiState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                is UserUiState.Error -> {
                     Text(
-                        text = it,
+                        text = (state as UserUiState.Error).message,
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                is UserUiState.Success -> {
+                    val user = (state as UserUiState.Success<User>).data
+
+                    // Avatar
+                    AsyncImage(
+                        model = user.avatarUrl,
+                        contentDescription = "${user.username} avatar",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .align(Alignment.CenterHorizontally)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Name
+                    Text(
+                        text = user.name ?: user.username,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = MaterialTheme.colorScheme.onBackground, // Themed text color
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+
+                    Text(
+                        text = "@${user.username}",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), // Themed, slightly transparent text color
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Bio
+                    Text(
+                        text = user.bio ?: "-",
                         textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground, // Themed text color
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                     )
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    user.followers?.let { StatCard(count = it, label = "Followers") }
-                    user.following?.let { StatCard(count = it, label = "Following") }
-                    user.publicRepos?.let { StatCard(count = it, label = "Repositories") }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        StatCard(count = user.followers ?: 0, label = "Followers")
+                        StatCard(count = user.following ?: 0, label = "Following")
+                        StatCard(count = user.publicRepos ?: 0, label = "Repositories")
+                    }
                 }
             }
         }
     }
+
 }
 
 @Composable
 fun StatCard(count: Int, label: String) {
     Column(
         modifier = Modifier
-            .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
             .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -131,12 +183,12 @@ fun StatCard(count: Int, label: String) {
             text = if (count >= 1000) "${count / 1000}k" else count.toString(),
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSecondary // Themed text color
         )
         Text(
             text = label,
             fontSize = 14.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSecondary // Themed text color
         )
     }
 }
