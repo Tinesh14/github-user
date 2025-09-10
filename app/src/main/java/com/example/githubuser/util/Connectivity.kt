@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.callbackFlow
 
 @Composable
 fun networkStatusFlow(context: Context = LocalContext.current): State<Boolean> {
-    val isConnected = remember { mutableStateOf(false) }
+    val isConnected = remember { mutableStateOf(true) }
 
     val connectivityManager = remember {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
