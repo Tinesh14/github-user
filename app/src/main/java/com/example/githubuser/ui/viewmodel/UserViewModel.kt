@@ -29,7 +29,7 @@ class UserViewModel(
     private val _allUsers = MutableStateFlow<UserUiState<List<User>>>(UserUiState.Loading)
     val allUsers: StateFlow<UserUiState<List<User>>> = _allUsers.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<UserUiState<List<User>>>(UserUiState.Success(emptyList()))
+    private val _searchResults = MutableStateFlow<UserUiState<List<User>>>(UserUiState.Loading)
     val searchResults: StateFlow<UserUiState<List<User>>> = _searchResults.asStateFlow()
 
     private val _userDetail = MutableStateFlow<UserUiState<User>>(UserUiState.Loading)

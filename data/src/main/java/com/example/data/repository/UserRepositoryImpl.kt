@@ -19,6 +19,7 @@ class UserRepositoryImpl(
 
     override fun searchUsers(query: String): Flow<List<User>> = flow {
         // Fetch remote search only
+        emit(emptyList()) // or a separate Loading wrapper
         val response = try {
             service.searchUsers(query)
         } catch (e: Exception) {
@@ -76,37 +77,27 @@ class UserRepositoryImpl(
         // Calculate which slice of cached to emit for this page
         val pageCached = cached.drop(since).take(perPage)
 
-        if (!isOnline){
-            if (cached.isEmpty()) emit(emptyList())
-            else emit(pageCached)
-            return@flow
-        }
+        val result = if (!isOnline) {
+            if (cached.isEmpty()) emptyList() else pageCached
+        } else {
+            try {
+                val remoteUsers = service.getAllUsers(since, perPage).map { it.toDomain() }
+                val cachedFavoriteMap = cached.filter { it.isFavorite }.associateBy { it.id }
 
-        try {
-            // Fetch remote users
-            val remoteUsers = service.getAllUsers(since, perPage).map { it.toDomain() }
-            // Create a map of cached favorite users for quick lookup
-            val cachedFavoriteMap = cached.filter { it.isFavorite }.associateBy { it.id }
+                val mergedUsers = remoteUsers.map { remoteUser ->
+                    cachedFavoriteMap[remoteUser.id]?.let { cachedUser ->
+                        remoteUser.copy(isFavorite = cachedUser.isFavorite)
+                    } ?: remoteUser
+                }
 
-            // Merge remote users with favorite status from cache
-            val mergedUsers = remoteUsers.map { remoteUser ->
-                cachedFavoriteMap[remoteUser.id]?.let { cachedUser ->
-                    remoteUser.copy(isFavorite = cachedUser.isFavorite)
-                } ?: remoteUser
-            }
-            // Store remote users in DB
-            userDao.insertUsers(mergedUsers.map { it.toEntity() })
+                userDao.insertUsers(mergedUsers.map { it.toEntity() })
 
-            // Emit remote users
-            emit(remoteUsers)
-        } catch (e: Exception) {
-            // If error, fallback to cached page only
-            if (pageCached.isNotEmpty()) {
-                emit(pageCached)
-            } else {
-                // If cache is empty, emit empty list
-                emit(emptyList())
+                mergedUsers
+            } catch (e: Exception) {
+                pageCached.ifEmpty { emptyList() }
             }
         }
+
+        emit(result) // 🔥 only one emission
     }
 }

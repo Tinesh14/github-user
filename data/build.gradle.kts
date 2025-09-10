@@ -54,4 +54,8 @@ dependencies {
 
     // Koin core (for defining modules in data layer)
     implementation(libs.koin.core)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.coroutines.test)
 }
