@@ -116,15 +116,6 @@ Data (Repository, Retrofit, Room)
   ```
 - Covers domain and repository logic
 
-### Instrumentation Tests
-- Run:
-  ```bash
-  ./gradlew connectedAndroidTest
-  ```
-- Includes:
-  - **DAO tests** (Room)
-  - **UI tests** (ComposeTestRule)
-
 ---
 
 ## 🖼 Favorite Feature

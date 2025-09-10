@@ -13,6 +13,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -40,7 +41,7 @@ class UserRepositoryImplTest {
         )
 
         // Act
-        val result = repository.searchUsers("octocat").first()
+        val result = repository.searchUsers("octocat").last()
 
         // Assert
         assertEquals(1, result.size)
